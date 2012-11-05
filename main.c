@@ -1,6 +1,8 @@
 #include <stm32f10x.h>
 #include <pwm.h>
 
+sine_param_t sinep;
+
 int main(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
@@ -14,7 +16,11 @@ int main(void)
     __enable_irq();
 
     pwm_init();
-    pwm_configure(273, 1000);
+
+    sinep.amplitude_pwm = 700;
+    sinep.freq_m        = -546;
+
+    pwm_reconfigure(&sinep);
 
     for(;;)
         GPIOC->ODR &= ~GPIO_ODR_ODR8;
