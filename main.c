@@ -1,7 +1,11 @@
 #include <stm32f10x.h>
-#include <pwm.h>
+#include "pwm.h"
+#include "drive.h"
 
+s16 freq = 273;
 sine_param_t sinep;
+volatile int flag = 1;
+
 
 int main(void)
 {
@@ -23,7 +27,19 @@ int main(void)
     pwm_reconfigure(&sinep);
 
     for(;;)
+    {
         GPIOC->ODR &= ~GPIO_ODR_ODR8;
+
+        if (flag)
+        {
+            flag = 0;
+
+            sinep.amplitude_pwm = drive_vf_control(freq);
+            sinep.freq_m        = freq;
+
+            pwm_reconfigure(&sinep);
+        }
+    }
 
     return 0;
 }
