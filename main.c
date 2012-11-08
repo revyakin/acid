@@ -3,9 +3,8 @@
 #include "drive.h"
 
 s16 freq = 273;
+s16 old_freq = 0;
 sine_param_t sinep;
-volatile int flag = 1;
-
 
 int main(void)
 {
@@ -30,9 +29,11 @@ int main(void)
     {
         GPIOC->ODR &= ~GPIO_ODR_ODR8;
 
-        if (flag)
+        asm("":::"memory");
+
+        if (old_freq != freq)
         {
-            flag = 0;
+            old_freq = freq;
 
             sinep.amplitude_pwm = drive_vf_control(freq);
             sinep.freq_m        = freq;

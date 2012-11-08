@@ -13,6 +13,62 @@ static void timer1_gpio_init()
     GPIOB->CRH |= GPIO_CRH_MODE13  | GPIO_CRH_MODE14  | GPIO_CRH_MODE15;
 }
 
+#define TIMER1_OUTPUT_DISABLE 0
+#define TIMER1_OUTPUT_ENABLE  1
+static void timer1_set_output_enable(int state)
+{
+    if (state == TIMER1_OUTPUT_ENABLE) {
+        TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1NE;
+        TIM1->CCER |= TIM_CCER_CC2E | TIM_CCER_CC2NE;
+        TIM1->CCER |= TIM_CCER_CC3E | TIM_CCER_CC3NE;
+    } else {
+        TIM1->CCER &= ~(TIM_CCER_CC1E | TIM_CCER_CC1NE);
+        TIM1->CCER &= ~(TIM_CCER_CC2E | TIM_CCER_CC2NE);
+        TIM1->CCER &= ~(TIM_CCER_CC3E | TIM_CCER_CC3NE);
+    }
+}
+
+#define TIMER1_POLARITY_NORMAL   0
+#define TIMER1_POLARITY_INVERTED 1
+static void timer1_set_output_polarity(int polarity)
+{
+    if (polarity == TIMER1_POLARITY_INVERTED) {
+        /* output idle state HIGHT */
+        TIM1->CR2 |= TIM_CR2_OIS1 | TIM_CR2_OIS1N;
+        TIM1->CR2 |= TIM_CR2_OIS2 | TIM_CR2_OIS2N;
+        TIM1->CR2 |= TIM_CR2_OIS3 | TIM_CR2_OIS3N;
+
+        /* active LOW */
+        TIM1->CCER |= TIM_CCER_CC1P | TIM_CCER_CC1NP;
+        TIM1->CCER |= TIM_CCER_CC2P | TIM_CCER_CC2NP;
+        TIM1->CCER |= TIM_CCER_CC3P | TIM_CCER_CC3NP;
+    } else {
+        /* output idle state LOW */
+        TIM1->CR2 &= ~(TIM_CR2_OIS1 | TIM_CR2_OIS1N);
+        TIM1->CR2 &= ~(TIM_CR2_OIS2 | TIM_CR2_OIS2N);
+        TIM1->CR2 &= ~(TIM_CR2_OIS3 | TIM_CR2_OIS3N);
+
+        /* active HIGHT */
+        TIM1->CCER &= ~(TIM_CCER_CC1P | TIM_CCER_CC1NP);
+        TIM1->CCER &= ~(TIM_CCER_CC2P | TIM_CCER_CC2NP);
+        TIM1->CCER &= ~(TIM_CCER_CC3P | TIM_CCER_CC3NP);
+    }
+
+}
+
+#define TIMER1_DEADTIME_6US 136
+#define TIMER1_DEADTIME_5US 120
+#define TIMER1_DEADTIME_4US 96
+static void timer1_deadtime(int dt)
+{
+    /* Tdts = Tck_int */
+    TIM1->CR1 &= ~TIM_CR1_CKD;
+    TIM1->BDTR &= ~TIM_BDTR_DTG;
+
+    TIM1->BDTR |= (dt & ~TIM_BDTR_DTG);
+}
+
+
 void timer1_init()
 {
 
@@ -48,11 +104,16 @@ void timer1_init()
     TIM1->CCMR2 |= TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1 |
         TIM_CCMR2_OC3PE;
 
-    /* enable output/compare outputs (CCxE = 1)
-     * and complementary outputs (CCxNE = 1) */
-    TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E |
-        TIM_CCER_CC3E | TIM_CCER_CC1NE | TIM_CCER_CC2NE |
-        TIM_CCER_CC3NE;
+//    /* enable output/compare outputs (CCxE = 1)
+//     * and complementary outputs (CCxNE = 1) */
+//    TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E |
+//        TIM_CCER_CC3E | TIM_CCER_CC1NE | TIM_CCER_CC2NE |
+//        TIM_CCER_CC3NE;
+        
+    timer1_set_output_enable(TIMER1_OUTPUT_ENABLE);
+    timer1_set_output_polarity(TIMER1_POLARITY_INVERTED);
+
+    timer1_deadtime(TIMER1_DEADTIME_5US);
 
     timer1_gpio_init();
 
@@ -68,4 +129,5 @@ void timer1_init()
     /* enable UPDATE interrupt request */
     TIM1->DIER |= TIM_DIER_UIE;
 }
+
 
