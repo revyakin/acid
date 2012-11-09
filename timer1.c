@@ -65,7 +65,7 @@ static void timer1_deadtime(int dt)
     TIM1->CR1 &= ~TIM_CR1_CKD;
     TIM1->BDTR &= ~TIM_BDTR_DTG;
 
-    TIM1->BDTR |= (dt & ~TIM_BDTR_DTG);
+    TIM1->BDTR |= (dt & TIM_BDTR_DTG);
 }
 
 
