@@ -4,9 +4,9 @@
 
 #define STK_LOAD_VAL 300000 - 1
 
-s16 freq = 273;
-s16 old_freq = 0;
-sine_param_t sinep;
+s16             freq        = 273;
+s16             old_freq    = 0;
+sine_param_t    sinep;
 
 void init()
 {
@@ -14,6 +14,9 @@ void init()
 
     GPIOC->CRH &= ~GPIO_CRH_CNF8;
     GPIOC->CRH |= GPIO_CRH_MODE8;
+
+    GPIOC->CRH &= ~GPIO_CRH_CNF9;
+    GPIOC->CRH |= GPIO_CRH_MODE9;
 
     pwm_init();
 
