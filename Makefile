@@ -12,6 +12,7 @@ OBJS += main.o
 OBJS += pwm.o
 OBJS += drive.o
 OBJS += timer1.o
+OBJS += usart.o
 
 # Tools
 #------------------------------------------------------------------------------

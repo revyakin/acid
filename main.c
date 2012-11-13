@@ -1,6 +1,7 @@
 #include <stm32f10x.h>
 #include "pwm.h"
 #include "drive.h"
+#include "usart.h"
 
 #define STK_LOAD_VAL 300000 - 1
 
@@ -25,6 +26,8 @@ void init()
 
     SysTick->LOAD = STK_LOAD_VAL;
     SysTick->CTRL |= SysTick_CTRL_TICKINT | SysTick_CTRL_ENABLE;
+
+    usart_init();
 }
 
 int main(void)

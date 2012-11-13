@@ -1,6 +1,11 @@
 #include "usart.h"
 #include <stm32f10x.h>
 
+#define USART_RX_BUF_SIZE 64
+
+u8 rx_ring_buffer[USART_RX_BUF_SIZE];
+u16 last_cndtr;
+
 static void usart_gpio_init(void)
 {
     /* Enable PORTC and AFIO module clocking */
@@ -23,6 +28,18 @@ static void usart_gpio_init(void)
     GPIOC->ODR |=  GPIO_ODR_ODR11;
 }
 
+static void usart_dma_init(void)
+{
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+
+    DMA1_Channel3->CPAR = &(USART3->DR);
+    DMA1_Channel3->CMAR = rx_ring_buffer;
+    DMA1_Channel3->CNDTR = USART_RX_BUF_SIZE;
+    last_cndtr = DMA1_Channel3->CNDTR;
+
+    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC | DMA_CCR3_EN;
+}
+
 void usart_init(void)
 {
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
@@ -33,11 +50,13 @@ void usart_init(void)
     USART3->BRR = (3 << 4) + 4;
 
     USART3->CR1 |= USART_CR1_RE | USART_CR1_TE;
+    USART3->CR3 |= USART_CR3_DMAR;
 
-    uart_gpio_init();
+    usart_dma_init();
+    usart_gpio_init();
 }
 
-void function_name()
+void usart_recv_buf(u8 *buf, u16 bufsize, u16 readed)
 {
-    /* code */
+    
 }
