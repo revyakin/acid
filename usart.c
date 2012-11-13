@@ -4,7 +4,7 @@
 #define USART_RX_BUF_SIZE 64
 
 u8 rx_ring_buffer[USART_RX_BUF_SIZE];
-u16 last_cndtr;
+u16 p_next;
 
 static void usart_gpio_init(void)
 {
@@ -35,7 +35,8 @@ static void usart_dma_init(void)
     DMA1_Channel3->CPAR = &(USART3->DR);
     DMA1_Channel3->CMAR = rx_ring_buffer;
     DMA1_Channel3->CNDTR = USART_RX_BUF_SIZE;
-    last_cndtr = DMA1_Channel3->CNDTR;
+
+    p_next = 0;
 
     DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC | DMA_CCR3_EN;
 }
@@ -56,7 +57,27 @@ void usart_init(void)
     usart_gpio_init();
 }
 
-void usart_recv_buf(u8 *buf, u16 bufsize, u16 readed)
+u16 usart_recv_count(void)
 {
-    
+    u16 p_curr = USART_RX_BUF_SIZE - DMA1_Channel3->CNDTR;
+
+    return (p_curr >= p_next) ? p_curr - p_next :
+        USART_RX_BUF_SIZE - (p_next - p_curr);
 }
+
+void usart_recv_buf(u8 *buf, u16 bufsize, u16 *readed)
+{
+    u16 recv_count = usart_recv_count();
+    recv_count = (bufsize > recv_count) ? recv_count : bufsize;
+
+    *readed = recv_count;
+
+    for (;recv_count > 0; recv_count --) {
+        *buf = rx_ring_buffer[p_next];
+        buf++;
+
+        if (++p_next >= USART_RX_BUF_SIZE)
+            p_next = 0;
+    }
+}
+

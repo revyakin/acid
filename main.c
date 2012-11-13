@@ -8,6 +8,7 @@
 s16             freq        = 273;
 s16             old_freq    = 0;
 sine_param_t    sinep;
+u32 counter;
 
 void init()
 {
@@ -32,6 +33,9 @@ void init()
 
 int main(void)
 {
+    u16 readed;
+    u8 buf[32];
+
     init();
     __enable_irq();
 
@@ -51,6 +55,13 @@ int main(void)
 
             pwm_reconfigure(&sinep);
         }
+
+        usart_recv_buf(buf, 10, &readed);
+        if (readed) {
+            GPIOC->ODR ^= GPIO_ODR_ODR9;
+            counter += readed;
+        }
+
     }
 
     return 0;
@@ -58,5 +69,4 @@ int main(void)
 
 void SysTick_Handler()
 {
-    GPIOC->ODR ^= GPIO_ODR_ODR9;
 }
