@@ -27,9 +27,9 @@ void pwm_reconfigure(sine_param_t *sine_param)
     // TODO: this must be atomic
 
     /* amplitude saturation */
-    if (sine_param->amplitude_pwm > (PWM_MAX_VALUE / 2))
+    if (sine_param->amplitude_pwm > ((PWM_MAX_VALUE / 2) - 1))
     {
-        amplitude = (PWM_MAX_VALUE / 2);
+        amplitude = (PWM_MAX_VALUE / 2) - 1;
     } else {
         amplitude = sine_param->amplitude_pwm;
     }

@@ -2,32 +2,37 @@
 #include "pwm.h"
 #include "drive.h"
 
+#define STK_LOAD_VAL 300000 - 1
+
 s16 freq = 273;
 s16 old_freq = 0;
 sine_param_t sinep;
 
-int main(void)
+void init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
 
     GPIOC->CRH &= ~GPIO_CRH_CNF8;
     GPIOC->CRH |= GPIO_CRH_MODE8;
 
+    pwm_init();
+
     NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 15);
     NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
 
+    SysTick->LOAD = STK_LOAD_VAL;
+    SysTick->CTRL |= SysTick_CTRL_TICKINT | SysTick_CTRL_ENABLE;
+}
+
+int main(void)
+{
+    init();
     __enable_irq();
-
-    pwm_init();
-
-    sinep.amplitude_pwm = 700;
-    sinep.freq_m        = -546;
-
-    pwm_reconfigure(&sinep);
 
     for(;;)
     {
-        GPIOC->ODR &= ~GPIO_ODR_ODR8;
+        if (GPIOC->ODR & GPIO_ODR_ODR8)
+            GPIOC->ODR &= ~GPIO_ODR_ODR8;
 
         asm("":::"memory");
 
@@ -45,3 +50,7 @@ int main(void)
     return 0;
 }
 
+void SysTick_Handler()
+{
+    GPIOC->ODR ^= GPIO_ODR_ODR9;
+}
