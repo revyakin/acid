@@ -8,6 +8,8 @@ OBJS += cmsis/startup_stm32f10x_md_vl.o
 OBJS += cmsis/system_stm32f10x.o
 OBJS += cmsis/core_cm3.o
 
+OBJS += stm32f10x_it.o
+
 OBJS += main.o
 OBJS += pwm.o
 OBJS += drive.o
@@ -37,7 +39,7 @@ CFLAGS += -mthumb -mcpu=cortex-m3
 CFLAGS += -ggdb -g3
 CFLAGS += -std=gnu99
 CFLAGS += -Wall -pedantic
-CFLAGS += -O2
+CFLAGS += -O1
 CFLAGS += -I. -Icmsis
 
 # Defines

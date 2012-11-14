@@ -33,9 +33,6 @@ void init()
 
 int main(void)
 {
-    u16 readed;
-    u8 buf[32];
-
     init();
     __enable_irq();
 
@@ -56,17 +53,10 @@ int main(void)
             pwm_reconfigure(&sinep);
         }
 
-        usart_recv_buf(buf, 10, &readed);
-        if (readed) {
+        if (usart_getch() != USART_NO_DATA)
             GPIOC->ODR ^= GPIO_ODR_ODR9;
-            counter += readed;
-        }
 
     }
 
     return 0;
-}
-
-void SysTick_Handler()
-{
 }

@@ -1,12 +1,10 @@
 #include "usart.h"
 #include <stm32f10x.h>
 
-#define USART_RX_BUF_SIZE 64
+static char rx_ringbuffer[USART_RX_BUF_SIZE];
+static int  rx_read_ptr;
 
-u8 rx_ring_buffer[USART_RX_BUF_SIZE];
-u16 p_next;
-
-static void usart_gpio_init(void)
+static void gpio_init(void)
 {
     /* Enable PORTC and AFIO module clocking */
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
@@ -28,56 +26,103 @@ static void usart_gpio_init(void)
     GPIOC->ODR |=  GPIO_ODR_ODR11;
 }
 
-static void usart_dma_init(void)
+static void dma_init(void)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+}
 
-    DMA1_Channel3->CPAR = &(USART3->DR);
-    DMA1_Channel3->CMAR = rx_ring_buffer;
+static void rx_dma_setup(void)
+{
+    DMA1_Channel3->CPAR  = (int) &(USART3->DR);
+    DMA1_Channel3->CMAR  = (int) rx_ringbuffer;
     DMA1_Channel3->CNDTR = USART_RX_BUF_SIZE;
 
-    p_next = 0;
+    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC;
 
-    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC | DMA_CCR3_EN;
+    rx_read_ptr = 0;
+}
+
+static void rx_dma_start_transfer(void)
+{
+    DMA1_Channel3->CCR |= DMA_CCR3_EN;
+}
+
+static void rx_dma_stop_transfer(void)
+{
+    DMA1_Channel3->CCR &= ~DMA_CCR3_EN;
+}
+
+static int rx_dma_complete_flag(void)
+{
+    return DMA1->ISR & DMA_ISR_TCIF3;
+}
+
+static void rx_dma_clear_complete_flag(void)
+{
+    DMA1->IFCR |= DMA_IFCR_CTCIF3;
+}
+
+static int rx_dma_current_address(void)
+{
+    return USART_RX_BUF_SIZE - DMA1_Channel3->CNDTR;
+}
+
+static int rx_get_received_count(void)
+{
+    int dma_curr_address = rx_dma_current_address();
+
+    if (rx_dma_complete_flag()) {
+        rx_dma_clear_complete_flag();
+
+        if (rx_read_ptr < dma_curr_address) {
+
+            rx_dma_stop_transfer();
+            rx_dma_setup();
+            rx_dma_start_transfer();
+
+            return USART_RX_FIFO_OVERLOAD;
+        }
+    }
+
+    return (rx_read_ptr <= dma_curr_address) ? dma_curr_address - rx_read_ptr :
+        USART_RX_BUF_SIZE - (rx_read_ptr - dma_curr_address);
 }
 
 void usart_init(void)
 {
+    gpio_init();
+
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
 
     USART3->CR1 |= USART_CR1_UE;
+
+    USART3->CR3 |= USART_CR3_DMAR;
+
+    dma_init();
+    rx_dma_setup();
+    rx_dma_start_transfer();
 
     /* 460.8 kbps */
     USART3->BRR = (3 << 4) + 4;
 
     USART3->CR1 |= USART_CR1_RE | USART_CR1_TE;
-    USART3->CR3 |= USART_CR3_DMAR;
-
-    usart_dma_init();
-    usart_gpio_init();
 }
 
-u16 usart_recv_count(void)
+int usart_getch(void)
 {
-    u16 p_curr = USART_RX_BUF_SIZE - DMA1_Channel3->CNDTR;
+    switch (rx_get_received_count()) {
+        case 0:
+            return USART_NO_DATA;
 
-    return (p_curr >= p_next) ? p_curr - p_next :
-        USART_RX_BUF_SIZE - (p_next - p_curr);
-}
-
-void usart_recv_buf(u8 *buf, u16 bufsize, u16 *readed)
-{
-    u16 recv_count = usart_recv_count();
-    recv_count = (bufsize > recv_count) ? recv_count : bufsize;
-
-    *readed = recv_count;
-
-    for (;recv_count > 0; recv_count --) {
-        *buf = rx_ring_buffer[p_next];
-        buf++;
-
-        if (++p_next >= USART_RX_BUF_SIZE)
-            p_next = 0;
+        case USART_RX_FIFO_OVERLOAD:
+            return USART_RX_FIFO_OVERLOAD;
     }
+
+    char ch = rx_ringbuffer[rx_read_ptr];
+
+    if (++rx_read_ptr >= USART_RX_BUF_SIZE)
+        rx_read_ptr = 0;
+
+    return (int) ch;
 }
 
