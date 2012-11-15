@@ -25,6 +25,8 @@
 #include "stm32f10x_it.h"
 #include "sine.h"
 
+extern u8 sampling_time_flag;
+
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -135,6 +137,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+    sampling_time_flag = 1;
 }
 
 /******************************************************************************/

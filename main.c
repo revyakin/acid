@@ -4,10 +4,8 @@
 #include "sine.h"
 #include "drive.h"
 
-#define STK_LOAD_VAL 300000 - 1
+#define STK_LOAD_VAL 30000 - 1
 
-s16 freq = 273;
-s16 old_freq = 0;
 sine_param_t sinep;
 
 void init()
@@ -29,6 +27,34 @@ void init()
     pwm_output_enable();
 }
 
+s16 current_freq = 0;
+u16 accel        = 1;
+s16 ref_freq     = 410;
+
+u8  sampling_time_flag = 0;
+
+
+void acceleration(void)
+{
+    if (current_freq == ref_freq)
+        return;
+
+    if (current_freq > ref_freq)
+    {
+        // Deceleration
+        if ((current_freq - ref_freq) < accel)
+            current_freq = ref_freq;
+        else
+            current_freq -= accel;
+    } else {
+        // Acceleration
+        if ((ref_freq - current_freq) < accel)
+            current_freq = ref_freq;
+        else
+            current_freq += accel;
+    }
+}
+
 int main(void)
 {
     init();
@@ -41,12 +67,14 @@ int main(void)
 
         asm("":::"memory");
 
-        if (old_freq != freq)
+        if (sampling_time_flag)
         {
-            old_freq = freq;
+            sampling_time_flag = 0;
 
-            sinep.amplitude_pwm = drive_vf_control(freq);
-            sinep.freq_m        = freq;
+            acceleration();
+
+            sinep.amplitude_pwm = drive_vf_control(current_freq);
+            sinep.freq_m        = current_freq;
 
             sine_set_params(&sinep);
         }
