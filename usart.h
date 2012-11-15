@@ -4,10 +4,13 @@
 #include <stm32f10x.h>
 
 #define USART_RX_BUF_SIZE      32
+#define USART_TX_BUF_SIZE      32
 #define USART_NO_DATA          -1
 #define USART_RX_FIFO_OVERLOAD -2
+#define USART_TX_BUSY          -3
 
 void usart_init(void);
 int  usart_getch(void);
+int  tx_dma_start_transfer(char *buf, int size);
 
 #endif /* end of include guard: USART_H */

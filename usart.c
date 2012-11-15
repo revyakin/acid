@@ -4,6 +4,9 @@
 static char rx_ringbuffer[USART_RX_BUF_SIZE];
 static int  rx_read_ptr;
 
+static char tx_buffer[USART_TX_BUF_SIZE];
+static int  tx_write_ptr;
+
 static void gpio_init(void)
 {
     /* Enable PORTC and AFIO module clocking */
@@ -88,6 +91,26 @@ static int rx_get_received_count(void)
         USART_RX_BUF_SIZE - (rx_read_ptr - dma_curr_address);
 }
 
+int tx_dma_start_transfer(char *buf, int size)
+{
+    if (DMA1_Channel2->CNDTR != 0)
+        return USART_TX_BUSY;
+
+    DMA1_Channel2->CCR &= ~DMA_CCR2_EN;
+
+    DMA1_Channel2->CPAR  = (int) &(USART3->DR);
+    DMA1_Channel2->CMAR  = (int) buf;
+    DMA1_Channel2->CNDTR = size;
+
+    DMA1_Channel2->CCR |= DMA_CCR2_MINC | DMA_CCR2_DIR;
+
+    USART3->SR &= ~USART_SR_TC;
+
+    DMA1_Channel2->CCR |= DMA_CCR2_EN;
+
+    return 0;
+}
+
 void usart_init(void)
 {
     gpio_init();
@@ -96,7 +119,7 @@ void usart_init(void)
 
     USART3->CR1 |= USART_CR1_UE;
 
-    USART3->CR3 |= USART_CR3_DMAR;
+    USART3->CR3 |= USART_CR3_DMAR | USART_CR3_DMAT;
 
     dma_init();
     rx_dma_setup();
@@ -124,5 +147,23 @@ int usart_getch(void)
         rx_read_ptr = 0;
 
     return (int) ch;
+}
+
+static int usart_flush(void)
+{
+    int status = tx_dma_start_transfer(tx_buffer, tx_write_ptr);
+    tx_write_ptr = 0;
+    return status;
+}
+
+int usart_putch(char c)
+{
+    tx_buffer[tx_write_ptr] = c;    
+
+    if (++tx_write_ptr >= USART_TX_BUF_SIZE) {
+        return usart_flush();
+    }
+
+    return 0;
 }
 

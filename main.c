@@ -53,8 +53,10 @@ int main(void)
             pwm_reconfigure(&sinep);
         }
 
-        if (usart_getch() != USART_NO_DATA)
+        if (usart_getch() != USART_NO_DATA) {
             GPIOC->ODR ^= GPIO_ODR_ODR9;
+            tx_dma_start_transfer("Hello!\r\n", 8);
+        }
 
     }
 
