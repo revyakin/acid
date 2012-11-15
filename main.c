@@ -1,14 +1,14 @@
 #include <stm32f10x.h>
+
 #include "pwm.h"
+#include "sine.h"
 #include "drive.h"
-#include "usart.h"
 
 #define STK_LOAD_VAL 300000 - 1
 
-s16             freq        = 273;
-s16             old_freq    = 0;
-sine_param_t    sinep;
-u32 counter;
+s16 freq = 273;
+s16 old_freq = 0;
+sine_param_t sinep;
 
 void init()
 {
@@ -17,25 +17,20 @@ void init()
     GPIOC->CRH &= ~GPIO_CRH_CNF8;
     GPIOC->CRH |= GPIO_CRH_MODE8;
 
-    GPIOC->CRH &= ~GPIO_CRH_CNF9;
-    GPIOC->CRH |= GPIO_CRH_MODE9;
-
-    pwm_init();
-
     NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 15);
     NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
 
     SysTick->LOAD = STK_LOAD_VAL;
     SysTick->CTRL |= SysTick_CTRL_TICKINT | SysTick_CTRL_ENABLE;
 
-    usart_init();
+    pwm_init();
+    sine_reset();
+
+    pwm_output_enable();
 }
 
 int main(void)
 {
-    u16 readed;
-    u8 buf[32];
-
     init();
     __enable_irq();
 
@@ -53,20 +48,10 @@ int main(void)
             sinep.amplitude_pwm = drive_vf_control(freq);
             sinep.freq_m        = freq;
 
-            pwm_reconfigure(&sinep);
+            sine_set_params(&sinep);
         }
-
-        usart_recv_buf(buf, 10, &readed);
-        if (readed) {
-            GPIOC->ODR ^= GPIO_ODR_ODR9;
-            counter += readed;
-        }
-
     }
 
     return 0;
 }
 
-void SysTick_Handler()
-{
-}

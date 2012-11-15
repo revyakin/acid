@@ -8,11 +8,13 @@ OBJS += cmsis/startup_stm32f10x_md_vl.o
 OBJS += cmsis/system_stm32f10x.o
 OBJS += cmsis/core_cm3.o
 
-OBJS += main.o
+OBJS += stm32f10x_it.o
+
 OBJS += pwm.o
+OBJS += sine.o
 OBJS += drive.o
-OBJS += timer1.o
-OBJS += usart.o
+OBJS += main.o
+
 
 # Tools
 #------------------------------------------------------------------------------

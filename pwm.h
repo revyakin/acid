@@ -1,22 +1,18 @@
 #ifndef PWM_H
 #define PWM_H
 
-#include <stdint.h>
-#include "timer1.h"
+#include <stm32f10x.h>
 
-#define MAX_AMPLITUDE  (PWM_MAX_VALUE / 2)
+#define PWM_MAX     2000
+#define PWM_ZERO    (PWM_MAX / 2)
 
-struct _sine_param_t {
-    u16 freq_m;         /* sine freq: F = (freq_m * Fclk) / 65536 */
-    s16 amplitude_pwm;  /* amplitude from 0 to (PWM_MAX_VALUE / 2) */
-};
+#define pwm_load_u(x) TIM1->CCR1 = (x)
+#define pwm_load_v(x) TIM1->CCR2 = (x)
+#define pwm_load_w(x) TIM1->CCR3 = (x)
 
-typedef struct _sine_param_t sine_param_t;
+void pwm_init();
 
-/*
- * Function prototypes
- */
-void pwm_init(void);
-void pwm_reconfigure(sine_param_t *sine_param);
+void pwm_output_disable();
+void pwm_output_enable();
 
 #endif /* end of include guard: PWM_H */
