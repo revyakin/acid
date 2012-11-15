@@ -3,12 +3,9 @@
 #include "drive.h"
 #include "usart.h"
 
-#define STK_LOAD_VAL 300000 - 1
+#define STK_LOAD_VAL 30000 - 1
 
-s16             freq        = 273;
-s16             old_freq    = 0;
 sine_param_t    sinep;
-u32 counter;
 
 void init()
 {
@@ -27,39 +24,72 @@ void init()
 
     SysTick->LOAD = STK_LOAD_VAL;
     SysTick->CTRL |= SysTick_CTRL_TICKINT | SysTick_CTRL_ENABLE;
+}
 
-    usart_init();
+s16 current_freq = 0;
+u16 accel        = 1;
+s16 ref_freq     = 410;
+u8  ts_flag      = 0;
+
+
+void acceleration(void)
+{
+    if (current_freq == ref_freq)
+        return;
+
+    if (current_freq > ref_freq)
+    {
+        // Deceleration
+        if ((current_freq - ref_freq) < accel)
+            current_freq = ref_freq;
+        else
+            current_freq -= accel;
+    } else {
+        // Acceleration
+        if ((ref_freq - current_freq) < accel)
+            current_freq = ref_freq;
+        else
+            current_freq += accel;
+    }
 }
 
 int main(void)
 {
-    u16 readed;
-    u8 buf[32];
+    int ind = 0;
+    u16 timer = 0;
+    s16 list[4] = {273, 546, 273, 0};
 
     init();
     __enable_irq();
 
     for(;;)
     {
+        asm("":::"memory");
+
         if (GPIOC->ODR & GPIO_ODR_ODR8)
             GPIOC->ODR &= ~GPIO_ODR_ODR8;
 
-        asm("":::"memory");
-
-        if (old_freq != freq)
+        if (ts_flag)
         {
-            old_freq = freq;
+            ts_flag = 0;
 
-            sinep.amplitude_pwm = drive_vf_control(freq);
-            sinep.freq_m        = freq;
+            acceleration();
+
+            sinep.amplitude_pwm = drive_vf_control(current_freq);
+            sinep.freq_m        = current_freq;
 
             pwm_reconfigure(&sinep);
-        }
 
-        usart_recv_buf(buf, 10, &readed);
-        if (readed) {
-            GPIOC->ODR ^= GPIO_ODR_ODR9;
-            counter += readed;
+            if (++timer > 1500)
+            {
+                timer = 0;
+
+                GPIOC->ODR ^= GPIO_ODR_ODR9;
+
+                ref_freq = list[ind];
+                ind++;
+                ind &= 0x3;
+            }
         }
 
     }
@@ -69,4 +99,5 @@ int main(void)
 
 void SysTick_Handler()
 {
+    ts_flag = 1;
 }
