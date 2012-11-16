@@ -34,6 +34,11 @@ static unsigned int abs(int x)
     return (x < 0) ? (unsigned int) (-x) : (unsigned int) x;
 }
 
+static unsigned int is_negative(int x)
+{
+    return (x < 0) ? 1 : 0;
+}
+
 int open_loop_acceleration(int reference, int acceleration)
 {
     static int current;
@@ -77,8 +82,9 @@ int main(void)
 
             int frequency = open_loop_acceleration(ref_speed, acceleration);
 
-            sinep.amplitude_pwm = drive_vf_control(frequency);
-            sinep.freq_m        = frequency;
+            sinep.direction     = is_negative(frequency);
+            sinep.amplitude_pwm = drive_vf_control(abs(frequency));
+            sinep.freq_m        = abs(frequency);
 
             sine_set_params(&sinep);
         }
