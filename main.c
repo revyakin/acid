@@ -3,8 +3,9 @@
 #include "pwm.h"
 #include "sine.h"
 #include "drive.h"
+#include "state_machine.h"
 
-#define STK_LOAD_VAL 30000 - 1
+#define STK_LOAD_VAL 3000 - 1
 
 sine_param_t sinep;
 

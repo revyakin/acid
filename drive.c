@@ -1,5 +1,6 @@
 #include "drive.h"
 #include "sine.h"
+#include "pwm.h"
 
 #define VF_SLOPE         938
 #define VF_MAX_AMPLITUDE 1000
@@ -72,5 +73,11 @@ void drive_open_loop(open_loop_params_t *params)
     sine_params.freq_m        = abs(frequency);
 
     sine_set_params(&sine_params);
+}
+
+void drive_halt(void)
+{
+    pwm_output_disable();
+    sine_reset();
 }
 

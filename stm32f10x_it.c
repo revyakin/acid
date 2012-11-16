@@ -23,9 +23,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "vtimers.h"
 #include "sine.h"
-
-extern int sampling_time_flag;
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -137,7 +136,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-    sampling_time_flag = 1;
+    vtimers_update_state();
 }
 
 /******************************************************************************/
@@ -149,12 +148,11 @@ void SysTick_Handler(void)
 
 void TIM1_UP_TIM16_IRQHandler()
 {
-    TIM1->SR &= ~TIM_SR_UIF;
-
-    GPIOC->ODR |= GPIO_ODR_ODR8;
+    TIM1->SR &= ~TIM_SR_UIF; /* Clear interrupt flag */
 
     sine_generation_task();
 }
+
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None

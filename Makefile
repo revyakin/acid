@@ -13,8 +13,9 @@ OBJS += stm32f10x_it.o
 OBJS += pwm.o
 OBJS += sine.o
 OBJS += drive.o
-OBJS += main.o
+OBJS += vtimers.o
 OBJS += state_machine.o
+OBJS += main.o
 
 
 # Tools
