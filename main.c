@@ -27,33 +27,37 @@ void init()
     pwm_output_enable();
 }
 
-s16 current_freq = 0;
-u16 accel        = 1;
-s16 ref_freq     = 410;
-
 u8  sampling_time_flag = 0;
 
-
-void acceleration(void)
+static unsigned int abs(int x)
 {
-    if (current_freq == ref_freq)
-        return;
-
-    if (current_freq > ref_freq)
-    {
-        // Deceleration
-        if ((current_freq - ref_freq) < accel)
-            current_freq = ref_freq;
-        else
-            current_freq -= accel;
-    } else {
-        // Acceleration
-        if ((ref_freq - current_freq) < accel)
-            current_freq = ref_freq;
-        else
-            current_freq += accel;
-    }
+    return (x < 0) ? (unsigned int) (-x) : (unsigned int) x;
 }
+
+int open_loop_acceleration(int reference, int acceleration)
+{
+    static int current;
+
+    if (current == reference)
+        return current;
+    
+    if (abs(current - reference) < acceleration) {
+        current = reference;
+        return current;
+    }
+
+    if (current > reference)
+    {
+        current -= acceleration;
+    } else {
+        current += acceleration;
+    }
+
+    return current;
+}
+
+int ref_speed    = 512;
+int acceleration = 1;
 
 int main(void)
 {
@@ -71,10 +75,10 @@ int main(void)
         {
             sampling_time_flag = 0;
 
-            acceleration();
+            int frequency = open_loop_acceleration(ref_speed, acceleration);
 
-            sinep.amplitude_pwm = drive_vf_control(current_freq);
-            sinep.freq_m        = current_freq;
+            sinep.amplitude_pwm = drive_vf_control(frequency);
+            sinep.freq_m        = frequency;
 
             sine_set_params(&sinep);
         }
