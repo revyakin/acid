@@ -1,8 +1,13 @@
 #ifndef DRIVE_H
 #define DRIVE_H
 
-#include <stm32f10x.h>
+struct _open_loop_params_t {
+    int frequency;
+    int acceleration;
+};
 
-u16 drive_vf_control(s16 freq_m);
+typedef struct _open_loop_params_t open_loop_params_t;
+
+void drive_open_loop(open_loop_params_t *params);
 
 #endif /* end of include guard: DRIVE_H */

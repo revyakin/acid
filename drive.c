@@ -1,27 +1,76 @@
 #include "drive.h"
+#include "sine.h"
 
-#define VF_SLOPE 938
+#define VF_SLOPE         938
+#define VF_MAX_AMPLITUDE 1000
+#define VF_MIN_AMPLITUDE 100
 
-u16 drive_vf_control(s16 freq_m)
+static unsigned int abs(int x)
 {
-    s16 tmp_amp;
+    return (x < 0) ? (unsigned int) (-x) : (unsigned int) x;
+}
+
+static unsigned int is_negative(int x)
+{
+    return (x < 0) ? 1 : 0;
+}
+
+static unsigned int vf_control(int frequency)
+{
+    unsigned int amplitude;
+
+    frequency = abs(frequency);
 
     /* Vf law */
-    tmp_amp = freq_m * VF_SLOPE / 256;
+    amplitude = frequency * VF_SLOPE / 256;
 
-    /* absolute value */
-    if (tmp_amp < 0)
-        tmp_amp = -tmp_amp;
-
-    /* amplitude saturation */
-    if (tmp_amp > 1000)
+    /* Amplitude saturation */
+    if (amplitude > VF_MAX_AMPLITUDE)
     {
-        tmp_amp = 1000;
+        amplitude = VF_MAX_AMPLITUDE;
     } 
-    else if (tmp_amp < 100)
+    else if (amplitude < VF_MIN_AMPLITUDE)
     {
-        tmp_amp = 100;
+        amplitude = VF_MIN_AMPLITUDE;
     }
 
-    return tmp_amp;
+    return amplitude;
 }
+
+static int open_loop_acceleration(int reference, int acceleration)
+{
+    static int current;
+
+    if (current == reference)
+        return current;
+    
+    if (abs(current - reference) < acceleration) {
+        current = reference;
+        return current;
+    }
+
+    if (current > reference)
+    {
+        current -= acceleration;
+    } else {
+        current += acceleration;
+    }
+
+    return current;
+}
+
+void drive_open_loop(open_loop_params_t *params)
+{
+    int ref_frequency = params->frequency;
+    int acceleration  = params->acceleration;
+
+    int frequency = open_loop_acceleration(ref_frequency, acceleration);
+
+    sine_param_t sine_params;
+    sine_params.direction     = is_negative(frequency);
+    sine_params.amplitude_pwm = vf_control(abs(frequency));
+    sine_params.freq_m        = abs(frequency);
+
+    sine_set_params(&sine_params);
+}
+

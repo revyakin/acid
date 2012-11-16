@@ -14,6 +14,7 @@ OBJS += pwm.o
 OBJS += sine.o
 OBJS += drive.o
 OBJS += main.o
+OBJS += state_machine.o
 
 
 # Tools

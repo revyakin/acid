@@ -25,7 +25,7 @@
 #include "stm32f10x_it.h"
 #include "sine.h"
 
-extern u8 sampling_time_flag;
+extern int sampling_time_flag;
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
