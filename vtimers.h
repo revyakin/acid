@@ -2,12 +2,14 @@
 #define VTIMERS_H
 
 #define OPEN_LOOP_UPDATE_TIME 10
+#define CHANGE_SPEED_TIME     15000
 
 /* 
  * Add timers to this enum
  */
 typedef enum {
     OPEN_LOOP_UPDATE_TIMER,
+    CHANGE_SPEED_TIMER,
     
     VTIMERS_NUM /* Must be last element */
 } vtimer_t;
