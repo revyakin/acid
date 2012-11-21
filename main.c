@@ -5,6 +5,8 @@
 #include "drive.h"
 #include "state_machine.h"
 #include "encoder.h"
+#include "usart.h"
+#include "readline.h"
 
 #define STK_LOAD_VAL 3000 - 1
 
@@ -29,6 +31,8 @@ void init()
     pwm_output_enable();
 
     encoder_init();
+    usart_init();
+    readline_init();
 
     __enable_irq();
 }
