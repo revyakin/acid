@@ -4,6 +4,7 @@
 #include "sine.h"
 #include "drive.h"
 #include "state_machine.h"
+#include "encoder.h"
 
 #define STK_LOAD_VAL 3000 - 1
 
@@ -26,6 +27,8 @@ void init()
     sine_reset();
 
     pwm_output_enable();
+
+    encoder_init();
 
     __enable_irq();
 }

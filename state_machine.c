@@ -1,6 +1,7 @@
 #include "state_machine.h"
 #include "vtimers.h"
 #include "drive.h"
+#include "encoder.h"
 
 #define FL_SIZE 6
 
@@ -14,6 +15,8 @@ open_loop_params_t open_loop_params = {
     .frequency    = 273,
     .acceleration = 1
 };
+
+int speed;
 
 int fl_index = 0;
 int frequency_list[FL_SIZE] = {
@@ -36,6 +39,8 @@ void state_machine(void)
     if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER)) {
         vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
 
+
+        speed = encoder_get_speed();
         drive_open_loop(&open_loop_params);
     }
 

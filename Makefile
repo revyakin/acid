@@ -14,6 +14,7 @@ OBJS += pwm.o
 OBJS += sine.o
 OBJS += drive.o
 OBJS += vtimers.o
+OBJS += encoder.o
 OBJS += state_machine.o
 OBJS += main.o
 
@@ -41,7 +42,7 @@ CFLAGS += -mthumb -mcpu=cortex-m3
 CFLAGS += -ggdb -g3
 CFLAGS += -std=gnu99
 CFLAGS += -Wall -pedantic
-CFLAGS += -O2
+CFLAGS += -O1
 CFLAGS += -I. -Icmsis
 
 # Defines
@@ -52,6 +53,7 @@ CFLAGS += -DVECT_TAB_FLASH
 
 # Linker flags
 #------------------------------------------------------------------------------
+LDFLAGS += -mthumb -mcpu=cortex-m3
 LDFLAGS += -nostartfiles -nostdlib
 LDFLAGS += -Wl,-Map=$(TARGET).map
 LDFLAGS += -L ldscripts -T ldscripts/stm32f100rb.ld
