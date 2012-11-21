@@ -1,11 +1,6 @@
 #include "usart.h"
 #include <stm32f10x.h>
 
-#define USART_RX_BUF_SIZE 64
-
-u8 rx_ring_buffer[USART_RX_BUF_SIZE];
-u16 p_next;
-
 static void usart_gpio_init(void)
 {
     /* Enable PORTC and AFIO module clocking */
@@ -28,19 +23,6 @@ static void usart_gpio_init(void)
     GPIOC->ODR |=  GPIO_ODR_ODR11;
 }
 
-static void usart_dma_init(void)
-{
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-
-    DMA1_Channel3->CPAR = &(USART3->DR);
-    DMA1_Channel3->CMAR = rx_ring_buffer;
-    DMA1_Channel3->CNDTR = USART_RX_BUF_SIZE;
-
-    p_next = 0;
-
-    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC | DMA_CCR3_EN;
-}
-
 void usart_init(void)
 {
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
@@ -53,31 +35,29 @@ void usart_init(void)
     USART3->CR1 |= USART_CR1_RE | USART_CR1_TE;
     USART3->CR3 |= USART_CR3_DMAR;
 
-    usart_dma_init();
     usart_gpio_init();
 }
 
-u16 usart_recv_count(void)
+int usart_getc(void)
 {
-    u16 p_curr = USART_RX_BUF_SIZE - DMA1_Channel3->CNDTR;
+    if (USART3->SR & USART_SR_RXNE) {
+        return USART3->DR;
+    }
 
-    return (p_curr >= p_next) ? p_curr - p_next :
-        USART_RX_BUF_SIZE - (p_next - p_curr);
+    return USART_NO_DATA;
 }
 
-void usart_recv_buf(u8 *buf, u16 bufsize, u16 *readed)
+void usart_putc(char c)
 {
-    u16 recv_count = usart_recv_count();
-    recv_count = (bufsize > recv_count) ? recv_count : bufsize;
+    while (!(USART3->SR & USART_SR_TXE));
+    USART3->DR = c;
+}
 
-    *readed = recv_count;
-
-    for (;recv_count > 0; recv_count --) {
-        *buf = rx_ring_buffer[p_next];
-        buf++;
-
-        if (++p_next >= USART_RX_BUF_SIZE)
-            p_next = 0;
+void usart_puts(char *str)
+{
+    while(*str) {
+        usart_putc(*str);
+        str++;
     }
 }
 

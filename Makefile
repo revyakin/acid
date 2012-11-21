@@ -16,6 +16,8 @@ OBJS += drive.o
 OBJS += vtimers.o
 OBJS += state_machine.o
 OBJS += main.o
+OBJS += usart.o
+OBJS += readline.o
 
 
 # Tools
@@ -52,6 +54,7 @@ CFLAGS += -DVECT_TAB_FLASH
 
 # Linker flags
 #------------------------------------------------------------------------------
+LDFLAGS += -mcpu=cortex-m3 -mthumb
 LDFLAGS += -nostartfiles -nostdlib
 LDFLAGS += -Wl,-Map=$(TARGET).map
 LDFLAGS += -L ldscripts -T ldscripts/stm32f100rb.ld

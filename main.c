@@ -4,6 +4,8 @@
 #include "sine.h"
 #include "drive.h"
 #include "state_machine.h"
+#include "usart.h"
+#include "readline.h"
 
 #define STK_LOAD_VAL 3000 - 1
 
@@ -26,6 +28,9 @@ void init()
     sine_reset();
 
     pwm_output_enable();
+
+    usart_init();
+    readline_init();
 
     __enable_irq();
 }
