@@ -1,6 +1,8 @@
 #include "drive.h"
 #include "sine.h"
 #include "pwm.h"
+#include "pid.h"
+#include "encoder.h"
 
 #define VF_SLOPE         938
 #define VF_MAX_AMPLITUDE 1000
@@ -80,4 +82,19 @@ void drive_halt(void)
     pwm_output_disable();
     sine_reset();
 }
+
+void drive_close_loop(int ref_speed)
+{
+    int measure = encoder_get_speed();
+
+    int pid_output = pid_controller(ref_speed, measure);
+
+    sine_param_t sine_params;
+    sine_params.direction     = is_negative(pid_output);
+    sine_params.amplitude_pwm = vf_control(abs(pid_output));
+    sine_params.freq_m        = abs(pid_output);
+
+    sine_set_params(&sine_params);
+}
+
 

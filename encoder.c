@@ -26,7 +26,7 @@ static void timer2_encoder_init()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 
-    TIM2->ARR = 65535;
+    TIM2->ARR = TIM2_RELOAD_VAL - 1;
 
     TIM2->SMCR  |= TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1;
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0;
@@ -45,9 +45,30 @@ void encoder_init(void)
 
 int encoder_get_speed(void)
 {
-    int tim2_cnt = TIM2->CNT;
+    int speed;
+    int cnt       = TIM2->CNT;
+    int direction = TIM2->CR1 & TIM_CR1_DIR;
 
-    return (tim2_cnt > tim2_old_cnt) ? (tim2_cnt - tim2_old_cnt) :
-        (TIM2_RELOAD_VAL - (tim2_old_cnt - tim2_cnt)); 
+    if ( direction ) {
+        
+        if (tim2_old_cnt >= cnt) {
+            speed = tim2_old_cnt - cnt;
+        } else {
+            speed = TIM2_RELOAD_VAL - (cnt - tim2_old_cnt);
+        }
+
+    } else {
+
+        if (cnt >= tim2_old_cnt) {
+            speed = cnt - tim2_old_cnt;
+        } else {
+            speed = TIM2_RELOAD_VAL - (tim2_old_cnt - cnt);
+        }
+
+    }
+
+    tim2_old_cnt = cnt;
+
+    return ( direction ) ? -speed : speed;
 }
 

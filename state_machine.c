@@ -7,6 +7,8 @@
 #include "encoder.h"
 #include "readline.h"
 #include "usart.h"
+#include "sine.h"
+#include "pid.h"
 
 #define FL_SIZE 6
 
@@ -33,7 +35,7 @@ int frequency_list[FL_SIZE] = {
     410
 };
 
-int run_auto = 1;
+int run = 0;
 
 void state_machine(void)
 {
@@ -43,27 +45,35 @@ void state_machine(void)
             break;
     }
 
-    if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER)) {
+    if (!run) {
+        sine_reset();        
+    }
+
+    if (run && vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER)) {
         vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
 
+        drive_close_loop( open_loop_params.frequency );
 
-        speed = encoder_get_speed();
-        drive_open_loop(&open_loop_params);
+//        speed = encoder_get_speed();
+//        drive_open_loop(&open_loop_params);
     }
 
-    if (vtimers_timer_elapsed(CHANGE_SPEED_TIMER) && run_auto) {
-        vtimers_set_timer(CHANGE_SPEED_TIMER, CHANGE_SPEED_TIME);
-
-        open_loop_params.frequency = frequency_list[fl_index];
-
-        if (++fl_index > FL_SIZE) {
-            fl_index = 0;
-        }
-    }
+//    if (vtimers_timer_elapsed(CHANGE_SPEED_TIMER) && run_auto) {
+//        vtimers_set_timer(CHANGE_SPEED_TIMER, CHANGE_SPEED_TIME);
+//
+//        open_loop_params.frequency = frequency_list[fl_index];
+//
+//        if (++fl_index > FL_SIZE) {
+//            fl_index = 0;
+//        }
+//    }
 
     readline_receive_task();
 }
 
+int kp = 0;
+int ki = 0;
+int kd = 0;
 
 void readline_exec(int argc, char *argv[])
 {
@@ -89,6 +99,18 @@ void readline_exec(int argc, char *argv[])
 
         }
 
+        else if ( !strcmp(argv[1], "kp") ) {
+            kp = atoi(argv[2]);
+        }
+
+        else if ( !strcmp(argv[1], "ki") ) {
+            ki = atoi(argv[2]);
+        }
+
+        else if ( !strcmp(argv[1], "kd") ) {
+            kd = atoi(argv[2]);
+        }
+
         else {
             goto unknown_param;
         }
@@ -96,13 +118,17 @@ void readline_exec(int argc, char *argv[])
     } 
 
     else if ( !strcmp(argv[0], "run") ) {
-        run_auto = 1;
+        run = 1;
         GPIOC->ODR |= GPIO_ODR_ODR9;
     }
 
     else if ( !strcmp(argv[0], "stop") ) {
-        run_auto = 0;
+        run = 0;
         GPIOC->ODR &= ~GPIO_ODR_ODR9;
+    }
+
+    else if ( !strcmp(argv[0], "pid-reset") ) {
+        pid_init(kp, ki, kd);
     }
 
     else {
