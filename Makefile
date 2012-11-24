@@ -15,6 +15,7 @@ OBJS += pwm.o
 OBJS += drive.o
 OBJS += timer1.o
 OBJS += usart.o
+OBJS += crc32.o
 
 # Tools
 #------------------------------------------------------------------------------
