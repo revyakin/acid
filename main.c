@@ -3,10 +3,14 @@
 #include "pwm.h"
 #include "sine.h"
 #include "drive.h"
+#include "usart.h"
+#include "modbus.h"
 
 #define STK_LOAD_VAL 30000 - 1
 
 sine_param_t sinep;
+
+extern uint16_t mbRegs[16];
 
 void init()
 {
@@ -14,9 +18,14 @@ void init()
 
     GPIOC->CRH &= ~GPIO_CRH_CNF8;
     GPIOC->CRH |= GPIO_CRH_MODE8;
+    GPIOC->CRH &= ~GPIO_CRH_CNF9;
+    GPIOC->CRH |= GPIO_CRH_MODE9;
 
     NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 15);
     NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
+
+//    NVIC_SetPriority(USART3_IRQn, 15);
+ //   NVIC_EnableIRQ(USART3_IRQn);
 
     SysTick->LOAD = STK_LOAD_VAL;
     SysTick->CTRL |= SysTick_CTRL_TICKINT | SysTick_CTRL_ENABLE;
@@ -25,6 +34,8 @@ void init()
     sine_reset();
 
     pwm_output_enable();
+    usart_init();
+    modbus_init();
 }
 
 u8  sampling_time_flag = 0;
@@ -69,6 +80,9 @@ int main(void)
     init();
     __enable_irq();
 
+    MB_WRITE_REG( MB_REG_STATUS, 0x55aa );
+    MB_WRITE_REG( MB_REG_CONTROL, 0xaa55 );
+
     for(;;)
     {
         if (GPIOC->ODR & GPIO_ODR_ODR8)
@@ -88,6 +102,9 @@ int main(void)
 
             sine_set_params(&sinep);
         }
+
+//        modbus_polling();
+        modbus_fsm();
     }
 
     return 0;

@@ -1,11 +1,6 @@
 #include "usart.h"
 #include <stm32f10x.h>
 
-#define USART_RX_BUF_SIZE 64
-
-u8 rx_ring_buffer[USART_RX_BUF_SIZE];
-u16 p_next;
-
 static void usart_gpio_init(void)
 {
     /* Enable PORTC and AFIO module clocking */
@@ -31,53 +26,59 @@ static void usart_gpio_init(void)
 static void usart_dma_init(void)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+}
 
-    DMA1_Channel3->CPAR = &(USART3->DR);
-    DMA1_Channel3->CMAR = rx_ring_buffer;
-    DMA1_Channel3->CNDTR = USART_RX_BUF_SIZE;
+void usart_rx_dma_start(uint8_t pBuffer[], uint16_t bufferLength)
+{
+    DMA1_Channel3->CCR &= ~DMA_CCR3_EN;         /* Disable DMA */
 
-    p_next = 0;
+    DMA1_Channel3->CPAR  = (int) &(USART3->DR);       /* From register */
+    DMA1_Channel3->CMAR  = (int) pBuffer;             /* To memory address */
+    DMA1_Channel3->CNDTR = bufferLength;        /* Number of bytes */
 
-    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_CIRC | DMA_CCR3_EN;
+    /* DMA start */
+    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_EN;
+}
+
+void usart_rx_dma_stop(void)
+{
+    DMA1_Channel3->CCR &= ~DMA_CCR3_EN;         /* Disable DMA */
+}
+
+uint16_t usart_rx_cndtr(void)
+{
+    return DMA1_Channel3->CNDTR;
+}
+
+void usart_tx_dma_start(uint8_t pBuffer[], uint16_t bufferLength)
+{
+    DMA1_Channel2->CCR &= ~DMA_CCR2_EN;     /* Disable DMA */
+
+    DMA1_Channel2->CPAR  = (int) &(USART3->DR);
+    DMA1_Channel2->CMAR  = (int) pBuffer;
+    DMA1_Channel2->CNDTR = bufferLength;
+
+    USART3->SR &= ~USART_SR_TC;
+
+    DMA1_Channel2->CCR |= DMA_CCR2_MINC | DMA_CCR2_DIR | DMA_CCR2_EN;
+}
+
+void usart_tx_dma_stop(void)
+{
+    DMA1_Channel2->CCR &= ~DMA_CCR2_EN;     /* Disable DMA */
 }
 
 void usart_init(void)
 {
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
-
     USART3->CR1 |= USART_CR1_UE;
-
-    /* 460.8 kbps */
-    USART3->BRR = (3 << 4) + 4;
-
-    USART3->CR1 |= USART_CR1_RE | USART_CR1_TE;
-    USART3->CR3 |= USART_CR3_DMAR;
 
     usart_dma_init();
     usart_gpio_init();
-}
 
-u16 usart_recv_count(void)
-{
-    u16 p_curr = USART_RX_BUF_SIZE - DMA1_Channel3->CNDTR;
-
-    return (p_curr >= p_next) ? p_curr - p_next :
-        USART_RX_BUF_SIZE - (p_next - p_curr);
-}
-
-void usart_recv_buf(u8 *buf, u16 bufsize, u16 *readed)
-{
-    u16 recv_count = usart_recv_count();
-    recv_count = (bufsize > recv_count) ? recv_count : bufsize;
-
-    *readed = recv_count;
-
-    for (;recv_count > 0; recv_count --) {
-        *buf = rx_ring_buffer[p_next];
-        buf++;
-
-        if (++p_next >= USART_RX_BUF_SIZE)
-            p_next = 0;
-    }
+    //USART3->BRR = (3 << 4) + 4;                     /* 460.8 Kbps */
+    USART3->BRR = (156 << 4) + 4;                     /* 9600 bps */
+    USART3->CR1 |= USART_CR1_RE | USART_CR1_TE; // | USART_CR1_IDLEIE | USART_CR1_TCIE;
+    USART3->CR3 |= USART_CR3_DMAR | USART_CR3_DMAT;
 }
 

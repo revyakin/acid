@@ -24,6 +24,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 #include "sine.h"
+#include "usart.h"
+#include "modbus.h"
 
 extern u8 sampling_time_flag;
 
@@ -147,6 +149,11 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
 
+/**
+  * @brief  This function handles TIMER1 interrupt request.
+  * @param  None
+  * @retval None
+  */
 void TIM1_UP_TIM16_IRQHandler()
 {
     TIM1->SR &= ~TIM_SR_UIF;
@@ -154,6 +161,16 @@ void TIM1_UP_TIM16_IRQHandler()
     GPIOC->ODR |= GPIO_ODR_ODR8;
 
     sine_generation_task();
+}
+
+/**
+  * @brief  This function handles USART3 interrupt request.
+  * @param  None
+  * @retval None
+  */
+void USART3_IRQHandler()
+{
+
 }
 /**
   * @brief  This function handles PPP interrupt request.

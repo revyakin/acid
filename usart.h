@@ -4,6 +4,10 @@
 #include <stm32f10x.h>
 
 void usart_init(void);
-void usart_recv_buf(u8 *buf, u16 bufsize, u16 *readed);
+void usart_rx_dma_start(uint8_t pBuffer[], uint16_t bufferLength);
+void usart_rx_dma_stop(void);
+uint16_t usart_rx_cndtr(void);
+void usart_tx_dma_start(uint8_t pBuffer[], uint16_t bufferLength);
+void usart_tx_dma_stop(void);
 
 #endif /* end of include guard: USART_H */
