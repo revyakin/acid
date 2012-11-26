@@ -25,6 +25,8 @@
 #include "stm32f10x_it.h"
 #include "vtimers.h"
 #include "sine.h"
+#include "usart.h"
+#include "modbus.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -146,11 +148,26 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
 
+/**
+  * @brief  This function handles TIMER1 interrupt request.
+  * @param  None
+  * @retval None
+  */
 void TIM1_UP_TIM16_IRQHandler()
 {
     TIM1->SR &= ~TIM_SR_UIF; /* Clear interrupt flag */
 
     sine_generation_task();
+}
+
+/**
+  * @brief  This function handles USART3 interrupt request.
+  * @param  None
+  * @retval None
+  */
+void USART3_IRQHandler()
+{
+
 }
 
 /**

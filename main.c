@@ -8,6 +8,7 @@
 #include "usart.h"
 #include "readline.h"
 #include "pid.h"
+#include "modbus.h"
 
 #define STK_LOAD_VAL 3000 - 1
 
@@ -33,7 +34,7 @@ void init()
 
     encoder_init();
     usart_init();
-    readline_init();
+    modbus_init();
 
     pid_init(4096, 102, 0);
 

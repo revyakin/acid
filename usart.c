@@ -23,41 +23,62 @@ static void usart_gpio_init(void)
     GPIOC->ODR |=  GPIO_ODR_ODR11;
 }
 
+static void usart_dma_init(void)
+{
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+}
+
+void usart_rx_dma_start(uint8_t pBuffer[], uint16_t bufferLength)
+{
+    DMA1_Channel3->CCR &= ~DMA_CCR3_EN;         /* Disable DMA */
+
+    DMA1_Channel3->CPAR  = (int) &(USART3->DR);       /* From register */
+    DMA1_Channel3->CMAR  = (int) pBuffer;             /* To memory address */
+    DMA1_Channel3->CNDTR = bufferLength;        /* Number of bytes */
+
+    /* DMA start */
+    DMA1_Channel3->CCR |= DMA_CCR3_MINC | DMA_CCR3_EN;
+}
+
+void usart_rx_dma_stop(void)
+{
+    DMA1_Channel3->CCR &= ~DMA_CCR3_EN;         /* Disable DMA */
+}
+
+uint16_t usart_rx_cndtr(void)
+{
+    return DMA1_Channel3->CNDTR;
+}
+
+void usart_tx_dma_start(uint8_t pBuffer[], uint16_t bufferLength)
+{
+    DMA1_Channel2->CCR &= ~DMA_CCR2_EN;     /* Disable DMA */
+
+    DMA1_Channel2->CPAR  = (int) &(USART3->DR);
+    DMA1_Channel2->CMAR  = (int) pBuffer;
+    DMA1_Channel2->CNDTR = bufferLength;
+
+    USART3->SR &= ~USART_SR_TC;
+
+    DMA1_Channel2->CCR |= DMA_CCR2_MINC | DMA_CCR2_DIR | DMA_CCR2_EN;
+}
+
+void usart_tx_dma_stop(void)
+{
+    DMA1_Channel2->CCR &= ~DMA_CCR2_EN;     /* Disable DMA */
+}
+
 void usart_init(void)
 {
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
-
     USART3->CR1 |= USART_CR1_UE;
 
-    /* 460.8 kbps */
-    USART3->BRR = (3 << 4) + 4;
-
-    USART3->CR1 |= USART_CR1_RE | USART_CR1_TE;
-    USART3->CR3 |= USART_CR3_DMAR;
-
+    usart_dma_init();
     usart_gpio_init();
-}
 
-int usart_getc(void)
-{
-    if (USART3->SR & USART_SR_RXNE) {
-        return USART3->DR;
-    }
-
-    return USART_NO_DATA;
-}
-
-void usart_putc(char c)
-{
-    while (!(USART3->SR & USART_SR_TXE));
-    USART3->DR = c;
-}
-
-void usart_puts(char *str)
-{
-    while(*str) {
-        usart_putc(*str);
-        str++;
-    }
+    //USART3->BRR = (3 << 4) + 4;                     /* 460.8 Kbps */
+    USART3->BRR = (156 << 4) + 4;                     /* 9600 bps */
+    USART3->CR1 |= USART_CR1_RE | USART_CR1_TE; // | USART_CR1_IDLEIE | USART_CR1_TCIE;
+    USART3->CR3 |= USART_CR3_DMAR | USART_CR3_DMAT;
 }
 

@@ -18,9 +18,8 @@ OBJS += encoder.o
 OBJS += state_machine.o
 OBJS += main.o
 OBJS += usart.o
-OBJS += readline.o
 OBJS += pid.o
-
+OBJS += modbus.o
 
 # Tools
 #------------------------------------------------------------------------------
