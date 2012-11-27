@@ -12,6 +12,17 @@ enum MB_REGISTERS {
     MB_REG_STATUS,
     MB_REG_CONTROL,
 
+    MB_REG_SPEED_REF,
+    MB_REG_SPEED_MEAS,
+
+    MB_REG_KFB,
+
+    MB_REG_PID_PROP,
+    MB_REG_PID_INT,
+    MB_REG_PID_DIF,
+    MB_REG_PID_OUTPUT,
+
+
     /* This is not a register. Must be last
      */
     MB_REGS_NUMBER

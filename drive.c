@@ -8,17 +8,17 @@
 #define VF_MAX_AMPLITUDE 1000
 #define VF_MIN_AMPLITUDE 100
 
-static unsigned int abs(int x)
+/*static*/ unsigned int abs(int x)
 {
     return (x < 0) ? (unsigned int) (-x) : (unsigned int) x;
 }
 
-static unsigned int is_negative(int x)
+/*static*/ unsigned int is_negative(int x)
 {
     return (x < 0) ? 1 : 0;
 }
 
-static unsigned int vf_control(int frequency)
+/*static*/ unsigned int vf_control(int frequency)
 {
     unsigned int amplitude;
 

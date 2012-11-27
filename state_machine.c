@@ -11,47 +11,117 @@
 #include "pid.h"
 #include "modbus.h"
 
-#define FL_SIZE 6
-
 typedef enum {
-    SM_STATE_RUN
+    SM_STATE_INIT = 0,
+    SM_STATE_STOP,
+    SM_STATE_RUN,
+    SM_STATE_BREAKING
 } state_t;
 
-state_t sm_state;
+state_t sm_state = SM_STATE_STOP;
 
-open_loop_params_t open_loop_params = {
-    .frequency    = 273,
-    .acceleration = 1
-};
+//open_loop_params_t open_loop_params = {
+//    .frequency    = 273,
+//    .acceleration = 1
+//};
 
 #define CONTROL_RUN 1
 
-uint16_t CONTROL = 0;
-uint16_t STATUS  = 0;
+uint16_t status  = 0;
+uint16_t control = 0;
+
+int16_t  speed_meas = 0;
+int16_t  speed_ref  = 0;
+int16_t  pid_output = 0;
+int16_t  k_fb       = 0;
 
 void state_machine(void)
 {
     /* Update state
      */
-    MB_WRITE_REG (MB_REG_STATUS, STATUS);
-    CONTROL = MB_READ_REG_U (MB_REG_CONTROL);
+    control = MB_READ_REG_U(MB_REG_CONTROL);
+    speed_ref = MB_READ_REG_S(MB_REG_SPEED_REF);
 
     switch(sm_state) {
+
+        case SM_STATE_INIT:
+
+            pid_init( MB_READ_REG_S(MB_REG_PID_PROP),
+                      MB_READ_REG_S(MB_REG_PID_INT),
+                      MB_READ_REG_S(MB_REG_PID_DIF));
+
+            k_fb = MB_READ_REG_S(MB_REG_KFB);
+
+            sm_state = SM_STATE_RUN;
+
+            break;
+
+        case SM_STATE_STOP:
+
+            if ( control & CONTROL_RUN ) {
+                sm_state = SM_STATE_INIT;
+                break;
+            }   
+
+            break;
+            
+        case SM_STATE_RUN:
+
+            if ( !(control & CONTROL_RUN) ) {
+                sine_reset();
+                sm_state = SM_STATE_BREAKING;
+            }
+
+            if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
+                vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
+
+                speed_meas = ((int32_t) (encoder_get_speed() * k_fb)) / 1024;
+
+                pid_output = pid_controller(speed_ref, speed_meas);
+
+                sine_param_t sine_params;
+                sine_params.direction     = is_negative(pid_output);
+                sine_params.amplitude_pwm = vf_control(abs(pid_output));
+                sine_params.freq_m        = abs(pid_output);
+
+                sine_set_params(&sine_params);
+            }
+
+            break;
+
+        case SM_STATE_BREAKING:
+
+            if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
+                vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
+
+                speed_meas = encoder_get_speed();
+
+                if (speed_meas == 0) {
+                    sm_state = SM_STATE_STOP;
+                    break;
+                }
+            }
+
+            break;
 
         default:
             break;
     }
 
-    if ( !(CONTROL & CONTROL_RUN) ) {
-        sine_reset();        
-    }
+    MB_WRITE_REG(MB_REG_SPEED_MEAS, speed_meas);
+    MB_WRITE_REG(MB_REG_PID_OUTPUT, pid_output);
+    MB_WRITE_REG(MB_REG_STATUS,     (uint16_t) sm_state);
 
-    if ( (CONTROL & CONTROL_RUN) && vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
-        vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
-
-        drive_close_loop( open_loop_params.frequency );
-
-    }
+//    if ( !(CONTROL & CONTROL_RUN) ) {
+//        sine_reset();        
+//    }
+//
+//    if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
+//        vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
+//
+//        drive_close_loop( open_loop_params.frequency );
+//
+//    }
 
     modbus_fsm();
 }
