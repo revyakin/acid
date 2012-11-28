@@ -136,8 +136,17 @@ void PendSV_Handler(void)
   * @param  None
   * @retval None
   */
+
+uint8_t divider   = 10;
+int16_t enc_delta = 0;
+
 void SysTick_Handler(void)
 {
+    if (divider-- <= 0) {
+        divider = 10;
+
+        enc_delta = encoder_get_speed();
+    }
     vtimers_update_state();
 }
 

@@ -30,10 +30,14 @@ state_t sm_state = SM_STATE_STOP;
 uint16_t status  = 0;
 uint16_t control = 0;
 
+extern int16_t enc_delta;
+
 int16_t  speed_meas = 0;
 int16_t  speed_ref  = 0;
 int16_t  pid_output = 0;
 int16_t  k_fb       = 0;
+
+pidc_t    pid;
 
 void state_machine(void)
 {
@@ -42,13 +46,16 @@ void state_machine(void)
     control = MB_READ_REG_U(MB_REG_CONTROL);
     speed_ref = MB_READ_REG_S(MB_REG_SPEED_REF);
 
+
+
     switch(sm_state) {
 
         case SM_STATE_INIT:
 
-            pid_init( MB_READ_REG_S(MB_REG_PID_PROP),
+            pid_init( &pid,
+                      MB_READ_REG_S(MB_REG_PID_PROP),
                       MB_READ_REG_S(MB_REG_PID_INT),
-                      MB_READ_REG_S(MB_REG_PID_DIF));
+                      MB_READ_REG_S(MB_REG_PID_DIF) );
 
             k_fb = MB_READ_REG_S(MB_REG_KFB);
 
@@ -75,9 +82,9 @@ void state_machine(void)
             if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
                 vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
 
-                speed_meas = ((int32_t) (encoder_get_speed() * k_fb)) / 1024;
+                speed_meas = (uint16_t) (((int32_t) (enc_delta * k_fb)) / 1024);
 
-                pid_output = pid_controller(speed_ref, speed_meas);
+                pid_output = pid_controller( &pid, speed_ref, speed_meas );
 
                 sine_param_t sine_params;
                 sine_params.direction     = is_negative(pid_output);
@@ -91,15 +98,9 @@ void state_machine(void)
 
         case SM_STATE_BREAKING:
 
-            if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
-                vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
-
-                speed_meas = encoder_get_speed();
-
-                if (speed_meas == 0) {
-                    sm_state = SM_STATE_STOP;
-                    break;
-                }
+            if (enc_delta == 0) {
+                sm_state = SM_STATE_STOP;
+                break;
             }
 
             break;
@@ -112,16 +113,6 @@ void state_machine(void)
     MB_WRITE_REG(MB_REG_PID_OUTPUT, pid_output);
     MB_WRITE_REG(MB_REG_STATUS,     (uint16_t) sm_state);
 
-//    if ( !(CONTROL & CONTROL_RUN) ) {
-//        sine_reset();        
-//    }
-//
-//    if (vtimers_timer_elapsed(OPEN_LOOP_UPDATE_TIMER) ) {
-//        vtimers_set_timer(OPEN_LOOP_UPDATE_TIMER, OPEN_LOOP_UPDATE_TIME);
-//
-//        drive_close_loop( open_loop_params.frequency );
-//
-//    }
 
     modbus_fsm();
 }

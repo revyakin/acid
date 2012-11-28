@@ -77,7 +77,9 @@ void usart_init(void)
     usart_gpio_init();
 
     //USART3->BRR = (3 << 4) + 4;                     /* 460.8 Kbps */
-    USART3->BRR = (156 << 4) + 4;                     /* 9600 bps */
+    //USART3->BRR = (156 << 4) + 4;                   /* 9600 bps */
+    //USART3->BRR = (15 << 4) + 10;                   /* 128 Kbps */
+    USART3->BRR = (13 << 4) + 3;                      /* 115.2 Kbps */
     USART3->CR1 |= USART_CR1_RE | USART_CR1_TE; // | USART_CR1_IDLEIE | USART_CR1_TCIE;
     USART3->CR3 |= USART_CR3_DMAR | USART_CR3_DMAT;
 }

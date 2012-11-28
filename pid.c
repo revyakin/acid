@@ -1,69 +1,50 @@
+
 #include "pid.h"
 
-static int m_pFactor;
-static int m_iFactor;
-static int m_dFactor;
-
-static int m_lastValue;
-static int m_sumError;
-
-static int m_maxError;
-static int m_maxSumError;
-
-void pid_init(int pFactor, int iFactor, int dFactor)
+void pid_init( pidc_t *pid, uint16_t p_factor, uint16_t i_factor, uint16_t d_factor )
 {
-    /* Reset controller */
-    m_lastValue = 0;
-    m_sumError  = 0;
+    /* Reset PID */
+    pid->last_meas = 0;
+    pid->sum_error = 0;
 
-    /* Tuning controller */
-    m_pFactor = pFactor;
-    m_iFactor = iFactor;
-    m_dFactor = dFactor;
+    /* Tuning */
+    pid->p_factor = p_factor;
+    pid->i_factor = i_factor;
+    pid->d_factor = d_factor;
 
-    /* Calculate maximum values */
-    m_maxError    = MAX_P_TERM / (m_pFactor + 1);
-    m_maxSumError = MAX_I_TERM / (m_iFactor + 1);
+    /* Calculate max values */
+    pid->max_error = P_TERM_MAX / (pid->p_factor + 1);
+    pid->max_sum   = I_TERM_MAX / (pid->i_factor + 1);
 }
 
-int pid_controller(int reference, int measure)
+int16_t pid_controller( pidc_t *pid, int16_t ref, int16_t meas )
 {
-    int error;
+    int32_t p_term, i_term, d_term;
+    int32_t error, temp;
 
-    int p_term;
-    int i_term;
-    int d_term;
+    error = ref - meas;
 
-    int temp;
-    //int ret;
-
-    error = reference - measure;
-
-    if (error > m_maxError) {
-        p_term = MAX_P_TERM;
-    } else if (error < -m_maxError) {
-        p_term = -MAX_P_TERM;
+    if ( error > pid->max_error ) {
+        p_term = P_TERM_MAX;
+    } else if ( error < -pid->max_error ) {
+        p_term = -P_TERM_MAX;
     } else {
-        p_term = m_pFactor * error;
-    }
-    
-    temp = m_sumError + error;
-
-    if (temp > m_maxSumError) {
-        i_term = MAX_I_TERM;    
-        m_sumError = m_maxSumError;
-    } else if (temp < -m_maxSumError) {
-        i_term = -MAX_I_TERM;    
-        m_sumError = -m_maxSumError;
-    } else {
-        m_sumError = temp;
-        i_term = m_iFactor * m_sumError;
+        p_term = pid->p_factor * error;
     }
 
-    d_term = m_dFactor * (m_lastValue - measure);
-    
-    m_lastValue = measure;
+    temp = pid->sum_error + error;
+    if ( temp > pid->max_sum ) {
+        i_term = I_TERM_MAX;
+    } else if ( temp < -I_TERM_MAX ) {
+        i_term = -I_TERM_MAX;
+    } else {
+        pid->sum_error = temp;
+        i_term = pid->i_factor * pid->sum_error;
+    }
 
-    return (p_term + i_term + d_term) / SCALING_FACTOR;
+    d_term = pid->d_factor * pid->last_meas - meas;
+    pid->last_meas = meas;
+
+    return (int16_t) ((p_term + i_term + d_term) / SCAL_FACTOR);
 }
 

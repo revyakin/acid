@@ -36,7 +36,7 @@ void init()
     usart_init();
     modbus_init();
 
-    pid_init(4096, 102, 0);
+//    pid_init(4096, 102, 0);
 
     __enable_irq();
 }
