@@ -22,6 +22,9 @@ enum MB_REGISTERS {
     MB_REG_PID_DIF,
     MB_REG_PID_OUTPUT,
 
+    MB_REG_PID_PERIOD,
+    MB_REG_ACCEL,
+    MB_REG_ACCEL_PERIOD,
 
     /* This is not a register. Must be last
      */

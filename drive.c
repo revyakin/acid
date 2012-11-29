@@ -40,7 +40,7 @@
     return amplitude;
 }
 
-static int open_loop_acceleration(int reference, int acceleration)
+int open_loop_acceleration(int reference, int acceleration)
 {
     static int current;
 

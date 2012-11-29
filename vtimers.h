@@ -10,6 +10,8 @@
 typedef enum {
     OPEN_LOOP_UPDATE_TIMER,
     CHANGE_SPEED_TIMER,
+    PID_TIMER,
+    ACCEL_TIMER,
     
     VTIMERS_NUM /* Must be last element */
 } vtimer_t;
