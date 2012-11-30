@@ -52,7 +52,7 @@ void state_machine(void)
     control      = MB_READ_REG_U(MB_REG_CONTROL);
     speed_ref    = MB_READ_REG_S(MB_REG_SPEED_REF);
     accel        = MB_READ_REG_S(MB_REG_ACCEL);
-    accel_period = MB_READ_REG_S(MB_REG_ACCEL);
+    accel_period = MB_READ_REG_S(MB_REG_ACCEL_PERIOD);
 
 
 
