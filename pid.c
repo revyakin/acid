@@ -42,7 +42,7 @@ int16_t pid_controller( pidc_t *pid, int16_t ref, int16_t meas )
         i_term = pid->i_factor * pid->sum_error;
     }
 
-    d_term = pid->d_factor * pid->last_meas - meas;
+    d_term = pid->d_factor * (pid->last_meas - meas);
     pid->last_meas = meas;
 
     return (int16_t) ((p_term + i_term + d_term) / SCAL_FACTOR);
