@@ -110,6 +110,12 @@ void state_machine(void)
 
                 pid_output = pid_controller( &pid, speed, speed_meas );
 
+                if (pid_output > 500) {
+                    pid_output = 500;
+                } else if (pid_output < -500) {
+                    pid_output = -500;
+                }
+
                 sine_param_t sine_params;
                 sine_params.direction     = is_negative(pid_output);
                 sine_params.amplitude_pwm = vf_control(abs(pid_output));

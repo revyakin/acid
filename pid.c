@@ -35,7 +35,7 @@ int16_t pid_controller( pidc_t *pid, int16_t ref, int16_t meas )
     temp = pid->sum_error + error;
     if ( temp > pid->max_sum ) {
         i_term = I_TERM_MAX;
-    } else if ( temp < -I_TERM_MAX ) {
+    } else if ( temp < -pid->max_sum ) {
         i_term = -I_TERM_MAX;
     } else {
         pid->sum_error = temp;
