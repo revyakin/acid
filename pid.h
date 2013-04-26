@@ -5,8 +5,8 @@
 
 #define SCAL_FACTOR 1024
 
-#define P_TERM_MAX  (INT32_MAX / 4)
-#define I_TERM_MAX  (INT32_MAX / 4)
+#define P_TERM_MAX  (INT32_MAX / 128)
+#define I_TERM_MAX  (INT32_MAX / 128)
 
 typedef struct {
 
